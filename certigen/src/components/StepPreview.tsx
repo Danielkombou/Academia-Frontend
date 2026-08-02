@@ -2,6 +2,7 @@ interface StepPreviewProps {
   step: number
   templatePreviewUrl: string
   recipients: { name: string }[]
+  textPositions: { name: { x: number; y: number; fontSize: number } }
   isGenerating: boolean
   generationProgress: number
   onGenerate: () => void
@@ -11,6 +12,7 @@ export function StepPreview({
   step,
   templatePreviewUrl,
   recipients,
+  textPositions,
   isGenerating,
   generationProgress,
   onGenerate,
@@ -26,21 +28,36 @@ export function StepPreview({
       {step === 4 ? (
         <div className="preview-container flex flex-col items-center gap-6">
           <div 
-            className="certificate-mockup relative w-full max-w-lg aspect-[1.4/1] bg-gradient-to-br from-gray-50 to-gray-200 border-4 border-[#aa3bff] rounded-xl flex flex-col items-center justify-center p-6 shadow-2xl text-center overflow-hidden"
+            className="certificate-mockup relative w-full max-w-xl aspect-[1.414/1] bg-white border-2 border-gray-300 rounded-xl shadow-2xl overflow-hidden"
             style={{
               backgroundImage: templatePreviewUrl ? `url(${templatePreviewUrl})` : undefined,
-              backgroundSize: 'cover',
+              backgroundSize: '100% 100%',
               backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
             }}
           >
             {!templatePreviewUrl && (
-              <div className="absolute inset-0 bg-white/80 dark:bg-black/40 flex flex-col items-center justify-center p-6"></div>
-            )}
-            <div className="relative z-10 flex flex-col items-center gap-2 w-full">
-              <span className="text-xs uppercase tracking-widest text-gray-500 font-bold">Certificate of Completion</span>
-              <div className="text-2xl lg:text-3xl font-serif font-bold text-[#08060d] border-b-2 border-[#aa3bff] pb-1 px-4 my-2">
-                {recipients[0] ? recipients[0].name || 'Daniel Kombou' : 'Daniel Kombou'}
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-200 flex flex-col items-center justify-center p-6 border-4 border-[#aa3bff]">
+                <span className="text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">Default Certificate Template</span>
+                <span className="text-sm text-gray-400">Upload a custom template in Step 1 to use your design</span>
               </div>
+            )}
+            {/* Dynamic Name Overlay positioned exactly matching PDF calculation */}
+            <div 
+              className="absolute w-full text-center transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+              style={{
+                left: `${textPositions.name.x}%`,
+                top: `${textPositions.name.y}%`,
+              }}
+            >
+              <span 
+                className="font-serif font-bold text-[#1a1a1a] drop-shadow-sm inline-block px-2"
+                style={{
+                  fontSize: `${Math.max(16, textPositions.name.fontSize * 0.75)}px`,
+                }}
+              >
+                {recipients[0] ? recipients[0].name || 'Daniel Kombou' : 'Daniel Kombou'}
+              </span>
             </div>
           </div>
 
