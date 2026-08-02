@@ -213,6 +213,7 @@ export default function App() {
           step={step}
           templatePreviewUrl={templatePreviewUrl}
           recipients={recipients}
+          textPositions={textPositions}
           isGenerating={isGenerating}
           generationProgress={generationProgress}
           onGenerate={generateCertificatesPDFs}
