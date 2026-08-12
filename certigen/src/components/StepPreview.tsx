@@ -51,7 +51,7 @@ export function StepPreview({
               }}
             >
               <span 
-                className="font-serif font-bold text-[#1a1a1a] drop-shadow-sm inline-block px-2"
+                className="font-serif font-bold text-[#1f2847] drop-shadow-sm inline-block px-2"
                 style={{
                   fontSize: `${Math.max(16, textPositions.name.fontSize * 0.75)}px`,
                 }}

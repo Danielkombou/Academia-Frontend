@@ -132,7 +132,7 @@ export default function App() {
         doc.rect(10, 10, 277, 190)
       }
 
-      doc.setTextColor(30, 30, 30)
+      doc.setTextColor(31, 40, 71)
       doc.setFont('times', 'bold')
       doc.setFontSize(textPositions.name.fontSize)
       const nameX = (textPositions.name.x / 100) * 297
