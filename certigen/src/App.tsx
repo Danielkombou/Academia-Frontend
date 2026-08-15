@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { jsPDF } from 'jspdf'
 import JSZip from 'jszip'
 import './App.css'
+import mammoth from "mammoth/mammoth.browser"
 
 import { Header } from './components/Header'
 import { Hero } from './components/Hero'
@@ -59,13 +60,26 @@ export default function App() {
       const file = e.target.files[0]
       setSpreadsheetFile(file)
       const reader = new FileReader()
-      reader.onload = (event) => {
-        const text = event.target?.result as string
-        if (text) {
-          parseCSV(text)
+
+     reader.onload = (event) => {
+        const content = event.target?.result
+        if (!content) return
+
+        if (file.name.endsWith(".docx")) {
+          mammoth.extractRawText({ arrayBuffer: content as ArrayBuffer })
+          .then(result => {
+              parseCSV(result.value)
+          })
+        } else {
+          parseCSV(content as string)
         }
       }
+
+    if (file.name.endsWith(".docx")){
+      reader.readAsArrayBuffer(file)
+    }else{
       reader.readAsText(file)
+      }
     }
   }
 
@@ -118,7 +132,7 @@ export default function App() {
         doc.rect(10, 10, 277, 190)
       }
 
-      doc.setTextColor(30, 30, 30)
+      doc.setTextColor(31, 40, 71)
       doc.setFont('times', 'bold')
       doc.setFontSize(textPositions.name.fontSize)
       const nameX = (textPositions.name.x / 100) * 297
