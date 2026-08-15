@@ -1,6 +1,7 @@
 interface StepPreviewProps {
   step: number
   templatePreviewUrl: string
+  templateDims: { width: number; height: number } | null
   recipients: { name: string }[]
   textPositions: { name: { x: number; y: number; fontSize: number } }
   isGenerating: boolean
@@ -11,6 +12,7 @@ interface StepPreviewProps {
 export function StepPreview({
   step,
   templatePreviewUrl,
+  templateDims,
   recipients,
   textPositions,
   isGenerating,
@@ -18,6 +20,10 @@ export function StepPreview({
   onGenerate,
 }: StepPreviewProps) {
   if (step < 4) return null
+
+  const aspectRatio = templateDims
+    ? templateDims.width / templateDims.height
+    : 1.414
 
   return (
     <div className={`step-card p-6 lg:p-8 rounded-2xl border transition-all ${step === 4 ? 'border-[#aa3bff]/50 shadow-xl bg-white dark:bg-[#1f2028]' : step > 4 ? 'border-gray-200 dark:border-[#2e303a] bg-gray-50 dark:bg-[#1f2028]/50' : 'opacity-40 pointer-events-none'}`}>
@@ -28,8 +34,9 @@ export function StepPreview({
       {step === 4 ? (
         <div className="preview-container flex flex-col items-center gap-6">
           <div 
-            className="certificate-mockup relative w-full max-w-xl aspect-[1.414/1] bg-white border-2 border-gray-300 rounded-xl shadow-2xl overflow-hidden"
+            className="certificate-mockup relative w-full max-w-xl bg-white border-2 border-gray-300 rounded-xl shadow-2xl overflow-hidden"
             style={{
+              aspectRatio: `${aspectRatio} / 1`,
               backgroundImage: templatePreviewUrl ? `url(${templatePreviewUrl})` : undefined,
               backgroundSize: '100% 100%',
               backgroundPosition: 'center',

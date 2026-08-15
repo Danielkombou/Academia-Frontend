@@ -3,6 +3,7 @@ import { jsPDF } from 'jspdf'
 import JSZip from 'jszip'
 import './App.css'
 import mammoth from "mammoth/mammoth.browser"
+import { isPdfFile, getImageTemplate, getPdfTemplate, type TemplateImage } from './templateUtils'
 
 import { Header } from './components/Header'
 import { Hero } from './components/Hero'
@@ -22,6 +23,7 @@ export default function App() {
   const [step, setStep] = useState<number>(0)
   const [templateFile, setTemplateFile] = useState<File | null>(null)
   const [templatePreviewUrl, setTemplatePreviewUrl] = useState<string>('')
+  const [templateDims, setTemplateDims] = useState<{ width: number; height: number } | null>(null)
   const [spreadsheetFile, setSpreadsheetFile] = useState<File | null>(null)
   const [recipients, setRecipients] = useState<Recipient[]>([
     { name: 'Daniel Kombou' },
@@ -46,12 +48,22 @@ export default function App() {
     }
   }
 
-  const handleTemplateUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTemplateUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
       setTemplateFile(file)
-      const url = URL.createObjectURL(file)
-      setTemplatePreviewUrl(url)
+      try {
+        const template: TemplateImage = isPdfFile(file)
+          ? await getPdfTemplate(file)
+          : await getImageTemplate(file)
+        setTemplatePreviewUrl(template.dataUrl)
+        setTemplateDims({ width: template.width, height: template.height })
+      } catch {
+        setTemplateFile(null)
+        setTemplatePreviewUrl('')
+        setTemplateDims(null)
+        alert('Sorry, this template could not be loaded. Please try a different file.')
+      }
     }
   }
 
@@ -104,39 +116,53 @@ export default function App() {
     }
   }
 
+  const getPageFormat = () => {
+    if (templateDims) {
+      const aspect = templateDims.width / templateDims.height
+      if (aspect >= 1) {
+        return { orientation: 'landscape' as const, format: [297, 297 / aspect] }
+      }
+      return { orientation: 'portrait' as const, format: [297 * aspect, 297] }
+    }
+    return { orientation: 'landscape' as const, format: 'a4' }
+  }
+
   const generateCertificatesPDFs = async () => {
     setIsGenerating(true)
     setGenerationProgress(0)
     const zip = new JSZip()
     const pdfList: { name: string; pdf: jsPDF }[] = []
+    const { orientation, format } = getPageFormat()
+    const [pageWidth, pageHeight] =
+      typeof format === 'string' ? [297, 210] : format
 
     for (let i = 0; i < recipients.length; i++) {
       const recipient = recipients[i]
       const nameVal = recipient.name || 'Recipient'
 
       const doc = new jsPDF({
-        orientation: 'landscape',
+        orientation,
         unit: 'mm',
-        format: 'a4',
+        format: format as [number, number],
       })
 
       if (templatePreviewUrl) {
         try {
-          doc.addImage(templatePreviewUrl, 'PNG', 0, 0, 297, 210)
+          doc.addImage(templatePreviewUrl, 'PNG', 0, 0, pageWidth, pageHeight)
         } catch {
           // Fallback
         }
       } else {
         doc.setLineWidth(1.5)
         doc.setDrawColor(170, 59, 255)
-        doc.rect(10, 10, 277, 190)
+        doc.rect(10, 10, pageWidth - 20, pageHeight - 20)
       }
 
       doc.setTextColor(31, 40, 71)
       doc.setFont('times', 'bold')
       doc.setFontSize(textPositions.name.fontSize)
-      const nameX = (textPositions.name.x / 100) * 297
-      const nameY = (textPositions.name.y / 100) * 210
+      const nameX = (textPositions.name.x / 100) * pageWidth
+      const nameY = (textPositions.name.y / 100) * pageHeight
       doc.text(nameVal, nameX, nameY, { align: 'center' })
 
       const pdfBlob = doc.output('blob')
@@ -173,6 +199,7 @@ export default function App() {
     setStep(0)
     setTemplateFile(null)
     setTemplatePreviewUrl('')
+    setTemplateDims(null)
     setSpreadsheetFile(null)
     setIsGenerating(false)
     setGeneratedZipBlob(null)
@@ -226,6 +253,7 @@ export default function App() {
         <StepPreview
           step={step}
           templatePreviewUrl={templatePreviewUrl}
+          templateDims={templateDims}
           recipients={recipients}
           textPositions={textPositions}
           isGenerating={isGenerating}

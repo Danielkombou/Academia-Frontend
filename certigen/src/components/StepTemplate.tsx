@@ -20,14 +20,14 @@ export function StepTemplate({ step, templateFile, onTemplateUpload, onNext, onE
           <input
             type="file"
             id="template-upload"
-            accept=".png,.jpg,.jpeg"
+            accept=".png,.jpg,.jpeg,.pdf"
             onChange={onTemplateUpload}
             className="hidden"
           />
-          <label htmlFor="template-upload" className="dropzone-label w-full border-2 border-dashed border-gray-300 dark:border-[#2e303a] rounded-xl p-10 text-center cursor-pointer hover:border-[#aa3bff] hover:bg-[#aa3bff]/5 transition-all">
+          <label htmlFor="template-upload" className="dropzone-label w-full border-2 border-dashed border-gray-300 dark:border-[#2e303a] rounded-xl p-6 sm:p-10 text-center cursor-pointer hover:border-[#aa3bff] hover:bg-[#aa3bff]/5 transition-all">
             <div className="dropzone-icon text-4xl mb-3">📄</div>
-            <p className="text-base font-medium text-[#08060d] dark:text-[#f3f4f6]"><strong>Drop your PNG/JPG template here</strong> or click to browse</p>
-            <p className="text-xs text-gray-400 mt-1">Recommended landscape 2970x2100px</p>
+            <p className="text-base font-medium text-[#08060d] dark:text-[#f3f4f6]"><strong>Drop your PNG / JPG / PDF template here</strong> or click to browse</p>
+            <p className="text-xs text-gray-400 mt-1">Recommended landscape 2970x2100px · PDF first page is used</p>
             {templateFile && <span className="file-selected inline-block mt-3 text-sm text-[#aa3bff] font-semibold">Selected: {templateFile.name}</span>}
           </label>
           {templateFile && (
