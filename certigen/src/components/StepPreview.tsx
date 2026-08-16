@@ -1,3 +1,5 @@
+import { formatCertificateName } from '../nameFormat'
+
 interface StepPreviewProps {
   step: number
   templatePreviewUrl: string
@@ -63,7 +65,7 @@ export function StepPreview({
                   fontSize: `${Math.max(16, textPositions.name.fontSize * 0.75)}px`,
                 }}
               >
-                {recipients[0] ? recipients[0].name || 'Daniel Kombou' : 'Daniel Kombou'}
+                {recipients[0] ? formatCertificateName(recipients[0].name || 'Daniel Kombou') : 'Daniel Kombou'}
               </span>
             </div>
           </div>

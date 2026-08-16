@@ -5,6 +5,7 @@ import './App.css'
 import mammoth from "mammoth/mammoth.browser"
 import { isPdfFile, getImageTemplate, getPdfTemplate, type TemplateImage } from './templateUtils'
 import { supportsStreamingZip, streamZipToDisk } from './zipUtils'
+import { formatCertificateName } from './nameFormat'
 
 import { Header } from './components/Header'
 import { Hero } from './components/Hero'
@@ -151,7 +152,8 @@ export default function App() {
     try {
       for (let i = 0; i < recipients.length; i++) {
         const recipient = recipients[i]
-        const nameVal = recipient.name || 'Recipient'
+        const rawName = recipient.name || 'Recipient'
+        const nameVal = formatCertificateName(rawName)
 
         const doc = new jsPDF({
           orientation,
@@ -178,7 +180,7 @@ export default function App() {
         const nameY = (textPositions.name.y / 100) * pageHeight
         doc.text(nameVal, nameX, nameY, { align: 'center' })
 
-        const sanitizedName = nameVal.replace(/[^a-zA-Z0-9]/g, '_')
+        const sanitizedName = rawName.replace(/[^a-zA-Z0-9]/g, '_')
         pdfBlobs.push({
           name: `Certificate_${sanitizedName}.pdf`,
           blob: doc.output('blob'),
