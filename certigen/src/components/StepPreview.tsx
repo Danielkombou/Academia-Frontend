@@ -27,6 +27,24 @@ export function StepPreview({
     ? templateDims.width / templateDims.height
     : 1.414
 
+  const previewName = recipients[0]
+    ? formatCertificateName(recipients[0].name || 'Daniel Kombou')
+    : 'Daniel Kombou'
+  const previewFontSize = Math.max(16, textPositions.name.fontSize * 0.75)
+
+  // jsPDF anchors text at its baseline; measure the font metrics so the preview
+  // can place the baseline at the same y% instead of centering the text box.
+  const serifStack = 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif'
+  let baselineOffset = previewFontSize * 0.8
+  const ctx = document.createElement('canvas').getContext('2d')
+  if (ctx) {
+    ctx.font = `bold ${previewFontSize}px ${serifStack}`
+    const metrics = ctx.measureText(previewName)
+    const ascent = metrics.fontBoundingBoxAscent || previewFontSize * 0.8
+    const descent = metrics.fontBoundingBoxDescent || previewFontSize * 0.2
+    baselineOffset = (previewFontSize + ascent - descent) / 2
+  }
+
   return (
     <div className={`step-card p-6 lg:p-8 rounded-2xl border transition-all ${step === 4 ? 'border-[#aa3bff]/50 shadow-xl bg-white dark:bg-[#1f2028]' : step > 4 ? 'border-gray-200 dark:border-[#2e303a] bg-gray-50 dark:bg-[#1f2028]/50' : 'opacity-40 pointer-events-none'}`}>
       <div className="step-header flex items-center gap-4 mb-4">
@@ -51,21 +69,24 @@ export function StepPreview({
                 <span className="text-sm text-gray-400">Upload a custom template in Step 1 to use your design</span>
               </div>
             )}
-            {/* Dynamic Name Overlay positioned exactly matching PDF calculation */}
+            {/* Dynamic Name Overlay: baseline anchored at y%, matching jsPDF */}
             <div 
-              className="absolute w-full text-center transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+              className="absolute w-full text-center pointer-events-none"
               style={{
                 left: `${textPositions.name.x}%`,
                 top: `${textPositions.name.y}%`,
+                transform: 'translate(-50%, 0)',
               }}
             >
               <span 
                 className="font-serif font-bold text-[#1f2847] drop-shadow-sm inline-block px-2"
                 style={{
-                  fontSize: `${Math.max(16, textPositions.name.fontSize * 0.75)}px`,
+                  fontSize: `${previewFontSize}px`,
+                  lineHeight: 1,
+                  transform: `translateY(${-baselineOffset}px)`,
                 }}
               >
-                {recipients[0] ? formatCertificateName(recipients[0].name || 'Daniel Kombou') : 'Daniel Kombou'}
+                {previewName}
               </span>
             </div>
           </div>
