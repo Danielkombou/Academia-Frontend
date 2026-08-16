@@ -73,39 +73,46 @@ export default function App() {
       setSpreadsheetFile(file)
       const reader = new FileReader()
 
-     reader.onload = (event) => {
+      reader.onload = async (event) => {
         const content = event.target?.result
         if (!content) return
 
-        if (file.name.endsWith(".docx")) {
-          mammoth.extractRawText({ arrayBuffer: content as ArrayBuffer })
-          .then(result => {
-              parseCSV(result.value)
-          })
+        const isDocx = file.name.toLowerCase().endsWith('.docx')
+        if (isDocx) {
+          try {
+            const result = await mammoth.extractRawText({ arrayBuffer: content as ArrayBuffer })
+            parseNamesFile(result.value)
+          } catch {
+            alert('Could not read the .docx file. Please make sure it is a valid Word document.')
+          }
         } else {
-          parseCSV(content as string)
+          parseNamesFile(content as string)
         }
       }
 
-    if (file.name.endsWith(".docx")){
-      reader.readAsArrayBuffer(file)
-    }else{
-      reader.readAsText(file)
+      if (file.name.toLowerCase().endsWith('.docx')) {
+        reader.readAsArrayBuffer(file)
+      } else {
+        reader.readAsText(file)
       }
     }
   }
 
-  const parseCSV = (csvText: string) => {
-    const lines = csvText.split('\n').filter(l => l.trim() !== '')
-    if (lines.length > 0) {
+  const parseNamesFile = (text: string) => {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+    if (lines.length === 0) return
+
+    const isCsv = lines.some(l => l.includes(','))
+
+    if (isCsv) {
       const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''))
       setColumns(headers)
       setNameColumn(headers[0] || 'name')
-      
+
       const parsedRecipients: Recipient[] = []
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''))
-        const nameVal = values[0] || lines[i].trim().replace(/^["']|["']$/g, '')
+        const nameVal = values[0] || lines[i].replace(/^["']|["']$/g, '')
         if (nameVal) {
           parsedRecipients.push({ name: nameVal })
         }
@@ -113,6 +120,11 @@ export default function App() {
       if (parsedRecipients.length > 0) {
         setRecipients(parsedRecipients)
       }
+    } else {
+      const parsedRecipients: Recipient[] = lines.map(l => ({ name: l.replace(/^["']|["']$/g, '') }))
+      setColumns(['name'])
+      setNameColumn('name')
+      setRecipients(parsedRecipients)
     }
   }
 

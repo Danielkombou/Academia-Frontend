@@ -23,13 +23,13 @@ export function StepNames({ step, spreadsheetFile, recipientCount, onSpreadsheet
           <input
             type="file"
             id="spreadsheet-upload"
-            accept=".csv,.txt"
+            accept=".csv,.txt,.docx"
             onChange={onSpreadsheetUpload}
             className="hidden"
           />
-          <label htmlFor="spreadsheet-upload" className="dropzone-label w-full border-2 border-dashed border-gray-300 dark:border-[#2e303a] rounded-xl p-10 text-center cursor-pointer hover:border-[#aa3bff] hover:bg-[#aa3bff]/5 transition-all">
+          <label htmlFor="spreadsheet-upload" className="dropzone-label w-full border-2 border-dashed border-gray-300 dark:border-[#2e303a] rounded-xl p-6 sm:p-10 text-center cursor-pointer hover:border-[#aa3bff] hover:bg-[#aa3bff]/5 transition-all">
             <div className="dropzone-icon text-4xl mb-3">📊</div>
-            <p className="text-base font-medium text-[#08060d] dark:text-[#f3f4f6]"><strong>Drop your names list here</strong> (one name per line or CSV)</p>
+            <p className="text-base font-medium text-[#08060d] dark:text-[#f3f4f6]"><strong>Drop your names list here</strong> (CSV, TXT or DOCX — one name per line)</p>
             <p className="text-xs text-gray-400 mt-1">Loaded with {recipientCount} demo recipients (or upload your own)</p>
             {spreadsheetFile && <span className="file-selected inline-block mt-3 text-sm text-[#aa3bff] font-semibold">Selected: {spreadsheetFile.name}</span>}
           </label>
