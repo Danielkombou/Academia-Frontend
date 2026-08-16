@@ -143,52 +143,67 @@ export default function App() {
     setIsGenerating(true)
     setGenerationProgress(0)
     const zip = new JSZip()
-    const pdfList: { name: string; pdf: jsPDF }[] = []
+    let samplePdf: { name: string; pdf: jsPDF } | null = null
     const { orientation, widthMm: pageWidth, heightMm: pageHeight } = getPageSize()
 
-    for (let i = 0; i < recipients.length; i++) {
-      const recipient = recipients[i]
-      const nameVal = recipient.name || 'Recipient'
+    try {
+      for (let i = 0; i < recipients.length; i++) {
+        const recipient = recipients[i]
+        const nameVal = recipient.name || 'Recipient'
 
-      const doc = new jsPDF({
-        orientation,
-        unit: 'mm',
-        format: [pageWidth, pageHeight],
-      })
+        const doc = new jsPDF({
+          orientation,
+          unit: 'mm',
+          format: [pageWidth, pageHeight],
+        })
 
-      if (templatePreviewUrl) {
-        try {
-          doc.addImage(templatePreviewUrl, 'PNG', 0, 0, pageWidth, pageHeight)
-        } catch {
-          // Fallback
+        if (templatePreviewUrl) {
+          try {
+            doc.addImage(templatePreviewUrl, 'PNG', 0, 0, pageWidth, pageHeight)
+          } catch {
+            // Fallback
+          }
+        } else {
+          doc.setLineWidth(1.5)
+          doc.setDrawColor(170, 59, 255)
+          doc.rect(10, 10, pageWidth - 20, pageHeight - 20)
         }
-      } else {
-        doc.setLineWidth(1.5)
-        doc.setDrawColor(170, 59, 255)
-        doc.rect(10, 10, pageWidth - 20, pageHeight - 20)
+
+        doc.setTextColor(31, 40, 71)
+        doc.setFont('times', 'bold')
+        doc.setFontSize(textPositions.name.fontSize)
+        const nameX = (textPositions.name.x / 100) * pageWidth
+        const nameY = (textPositions.name.y / 100) * pageHeight
+        doc.text(nameVal, nameX, nameY, { align: 'center' })
+
+        const pdfBlob = doc.output('blob')
+        const sanitizedName = nameVal.replace(/[^a-zA-Z0-9]/g, '_')
+        zip.file(`Certificate_${sanitizedName}.pdf`, pdfBlob)
+
+        if (!samplePdf) {
+          samplePdf = { name: `Certificate_${sanitizedName}.pdf`, pdf: doc }
+        }
+
+        setGenerationProgress(Math.round(((i + 1) / recipients.length) * 100))
+        // Yield so the browser can repaint and garbage-collect each doc
+        await new Promise(r => setTimeout(r, 20))
       }
 
-      doc.setTextColor(31, 40, 71)
-      doc.setFont('times', 'bold')
-      doc.setFontSize(textPositions.name.fontSize)
-      const nameX = (textPositions.name.x / 100) * pageWidth
-      const nameY = (textPositions.name.y / 100) * pageHeight
-      doc.text(nameVal, nameX, nameY, { align: 'center' })
-
-      const pdfBlob = doc.output('blob')
-      const sanitizedName = nameVal.replace(/[^a-zA-Z0-9]/g, '_')
-      zip.file(`Certificate_${sanitizedName}.pdf`, pdfBlob)
-      pdfList.push({ name: `Certificate_${sanitizedName}.pdf`, pdf: doc })
-
-      setGenerationProgress(Math.round(((i + 1) / recipients.length) * 100))
-      await new Promise(r => setTimeout(r, 20))
+      // PDFs are already compressed internally, so STORE avoids a costly re-deflate
+      const zipBlob = await zip.generateAsync({
+        type: 'blob',
+        compression: 'STORE',
+        compressionOptions: { level: 0 },
+      })
+      setGeneratedZipBlob(zipBlob)
+      setGeneratedPdfs(samplePdf ? [samplePdf] : [])
+      setIsGenerating(false)
+      setStep(5)
+    } catch (err) {
+      console.error('Certificate generation failed:', err)
+      setIsGenerating(false)
+      alert('Generation failed — your browser may have run out of memory. Try fewer recipients or a smaller template.')
     }
-
-    const zipBlob = await zip.generateAsync({ type: 'blob' })
-    setGeneratedZipBlob(zipBlob)
-    setGeneratedPdfs(pdfList)
-    setIsGenerating(false)
-    setStep(5)
   }
 
   const downloadZip = () => {
