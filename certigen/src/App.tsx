@@ -116,15 +116,15 @@ export default function App() {
     }
   }
 
-  const getPageFormat = () => {
+  const getPageSize = (): { orientation: 'landscape' | 'portrait'; widthMm: number; heightMm: number } => {
     if (templateDims) {
       const aspect = templateDims.width / templateDims.height
       if (aspect >= 1) {
-        return { orientation: 'landscape' as const, format: [297, 297 / aspect] }
+        return { orientation: 'landscape', widthMm: 297, heightMm: 297 / aspect }
       }
-      return { orientation: 'portrait' as const, format: [297 * aspect, 297] }
+      return { orientation: 'portrait', widthMm: 297 * aspect, heightMm: 297 }
     }
-    return { orientation: 'landscape' as const, format: 'a4' }
+    return { orientation: 'landscape', widthMm: 297, heightMm: 210 }
   }
 
   const generateCertificatesPDFs = async () => {
@@ -132,9 +132,7 @@ export default function App() {
     setGenerationProgress(0)
     const zip = new JSZip()
     const pdfList: { name: string; pdf: jsPDF }[] = []
-    const { orientation, format } = getPageFormat()
-    const [pageWidth, pageHeight] =
-      typeof format === 'string' ? [297, 210] : format
+    const { orientation, widthMm: pageWidth, heightMm: pageHeight } = getPageSize()
 
     for (let i = 0; i < recipients.length; i++) {
       const recipient = recipients[i]
@@ -143,7 +141,7 @@ export default function App() {
       const doc = new jsPDF({
         orientation,
         unit: 'mm',
-        format: format as [number, number],
+        format: [pageWidth, pageHeight],
       })
 
       if (templatePreviewUrl) {

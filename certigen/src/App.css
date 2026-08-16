@@ -446,9 +446,62 @@
 
 @media (max-width: 768px) {
   .app-header {
-    padding: 16px 20px;
+    padding: 14px 16px;
+  }
+  .logo-container {
+    font-size: 17px;
+    gap: 8px;
+  }
+  .logo-icon {
+    font-size: 20px;
+  }
+  .nav-links {
+    gap: 12px;
+  }
+  .login-btn {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+  .hero-section {
+    padding: 48px 16px 40px;
+  }
+  .hero-subtitle {
+    font-size: 17px;
+  }
+  .hero-cta {
+    font-size: 16px;
+    padding: 14px 28px;
+  }
+  .flow-section {
+    padding: 40px 12px 64px;
+  }
+  .flow-prompt-card {
+    padding: 20px 16px;
+  }
+  .step-card {
+    padding: 20px;
+  }
+  .dropzone-label {
+    padding: 24px 12px;
+  }
+  .step-summary {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .certificate-mockup {
+    max-width: 100%;
   }
   .download-actions {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .nav-links a {
+    display: none;
+  }
+  .step-header {
+    flex-wrap: wrap;
+    gap: 10px;
   }
 }

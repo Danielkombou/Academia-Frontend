@@ -48,7 +48,6 @@ export const getPdfTemplate = async (file: File, targetDpi = 300): Promise<Templ
   const pdf = await loadingTask.promise
   try {
     const page = await pdf.getPage(1)
-    const baseViewport = page.getViewport({ scale: 1 })
     const scale = targetDpi / 72
     const viewport = page.getViewport({ scale })
     const canvas = document.createElement('canvas')
@@ -56,7 +55,7 @@ export const getPdfTemplate = async (file: File, targetDpi = 300): Promise<Templ
     canvas.height = Math.ceil(viewport.height)
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new Error('Canvas is not supported in this browser.')
-    await page.render({ canvasContext: ctx, viewport }).promise
+    await page.render({ canvasContext: ctx, viewport, canvas }).promise
     return {
       dataUrl: canvas.toDataURL('image/png'),
       width: canvas.width,
@@ -64,6 +63,6 @@ export const getPdfTemplate = async (file: File, targetDpi = 300): Promise<Templ
       format: 'PNG',
     }
   } finally {
-    pdf.destroy()
+    loadingTask.destroy()
   }
 }
