@@ -33,7 +33,7 @@ export default function App() {
   const [columns, setColumns] = useState<string[]>(['name'])
   const [nameColumn, setNameColumn] = useState<string>('name')
   const [textPositions, setTextPositions] = useState({
-    name: { x: 50, y: 50, fontSize: 36 },
+    name: { x: 50, y: 53, fontSize: 36 },
   })
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationProgress, setGenerationProgress] = useState(0)
