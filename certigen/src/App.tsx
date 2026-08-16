@@ -98,6 +98,9 @@ export default function App() {
     }
   }
 
+  const cleanName = (raw: string) =>
+    raw.trim().replace(/^\s*\d+\s*[.)]\s*/, '').replace(/^["']|["']$/g, '')
+
   const parseNamesFile = (text: string) => {
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
     if (lines.length === 0) return
@@ -112,7 +115,7 @@ export default function App() {
       const parsedRecipients: Recipient[] = []
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''))
-        const nameVal = values[0] || lines[i].replace(/^["']|["']$/g, '')
+        const nameVal = cleanName(values[0] || lines[i])
         if (nameVal) {
           parsedRecipients.push({ name: nameVal })
         }
@@ -121,7 +124,7 @@ export default function App() {
         setRecipients(parsedRecipients)
       }
     } else {
-      const parsedRecipients: Recipient[] = lines.map(l => ({ name: l.replace(/^["']|["']$/g, '') }))
+      const parsedRecipients: Recipient[] = lines.map(l => ({ name: cleanName(l) }))
       setColumns(['name'])
       setNameColumn('name')
       setRecipients(parsedRecipients)
