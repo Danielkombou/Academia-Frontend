@@ -4,6 +4,7 @@ import JSZip from 'jszip'
 import './App.css'
 import mammoth from "mammoth/mammoth.browser"
 import { isPdfFile, getImageTemplate, getPdfTemplate, type TemplateImage } from './templateUtils'
+import { supportsStreamingZip, streamZipToDisk } from './zipUtils'
 
 import { Header } from './components/Header'
 import { Hero } from './components/Hero'
@@ -37,8 +38,7 @@ export default function App() {
   })
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationProgress, setGenerationProgress] = useState(0)
-  const [generatedZipBlob, setGeneratedZipBlob] = useState<Blob | null>(null)
-  const [generatedPdfs, setGeneratedPdfs] = useState<{ name: string; pdf: jsPDF }[]>([])
+  const [generatedPdfs, setGeneratedPdfs] = useState<{ name: string; blob: Blob }[]>([])
 
   const handleStartGenerating = () => {
     setStep(1)
@@ -142,8 +142,7 @@ export default function App() {
   const generateCertificatesPDFs = async () => {
     setIsGenerating(true)
     setGenerationProgress(0)
-    const zip = new JSZip()
-    let samplePdf: { name: string; pdf: jsPDF } | null = null
+    const pdfBlobs: { name: string; blob: Blob }[] = []
     const { orientation, widthMm: pageWidth, heightMm: pageHeight } = getPageSize()
 
     try {
@@ -176,27 +175,18 @@ export default function App() {
         const nameY = (textPositions.name.y / 100) * pageHeight
         doc.text(nameVal, nameX, nameY, { align: 'center' })
 
-        const pdfBlob = doc.output('blob')
         const sanitizedName = nameVal.replace(/[^a-zA-Z0-9]/g, '_')
-        zip.file(`Certificate_${sanitizedName}.pdf`, pdfBlob)
-
-        if (!samplePdf) {
-          samplePdf = { name: `Certificate_${sanitizedName}.pdf`, pdf: doc }
-        }
+        pdfBlobs.push({
+          name: `Certificate_${sanitizedName}.pdf`,
+          blob: doc.output('blob'),
+        })
 
         setGenerationProgress(Math.round(((i + 1) / recipients.length) * 100))
         // Yield so the browser can repaint and garbage-collect each doc
         await new Promise(r => setTimeout(r, 20))
       }
 
-      // PDFs are already compressed internally, so STORE avoids a costly re-deflate
-      const zipBlob = await zip.generateAsync({
-        type: 'blob',
-        compression: 'STORE',
-        compressionOptions: { level: 0 },
-      })
-      setGeneratedZipBlob(zipBlob)
-      setGeneratedPdfs(samplePdf ? [samplePdf] : [])
+      setGeneratedPdfs(pdfBlobs)
       setIsGenerating(false)
       setStep(5)
     } catch (err) {
@@ -206,9 +196,18 @@ export default function App() {
     }
   }
 
-  const downloadZip = () => {
-    if (!generatedZipBlob) return
-    const url = URL.createObjectURL(generatedZipBlob)
+  const downloadZipFallback = async () => {
+    const zip = new JSZip()
+    for (const { name, blob } of generatedPdfs) {
+      zip.file(name, blob)
+    }
+    // PDFs are already compressed internally, so STORE avoids a costly re-deflate
+    const zipBlob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'STORE',
+      compressionOptions: { level: 0 },
+    })
+    const url = URL.createObjectURL(zipBlob)
     const a = document.createElement('a')
     a.href = url
     a.download = 'Certificates_Batch.zip'
@@ -216,8 +215,27 @@ export default function App() {
     URL.revokeObjectURL(url)
   }
 
-  const downloadSinglePDF = (pdfObj: { name: string; pdf: jsPDF }) => {
-    pdfObj.pdf.save(pdfObj.name)
+  const downloadZip = async () => {
+    if (generatedPdfs.length === 0) return
+    if (supportsStreamingZip()) {
+      try {
+        await streamZipToDisk(generatedPdfs, 'Certificates_Batch.zip')
+        return
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        // Fall back on unexpected failures
+      }
+    }
+    await downloadZipFallback()
+  }
+
+  const downloadSinglePDF = (pdf: { name: string; blob: Blob }) => {
+    const url = URL.createObjectURL(pdf.blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = pdf.name
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const resetAll = () => {
@@ -227,7 +245,6 @@ export default function App() {
     setTemplateDims(null)
     setSpreadsheetFile(null)
     setIsGenerating(false)
-    setGeneratedZipBlob(null)
     setGeneratedPdfs([])
   }
 

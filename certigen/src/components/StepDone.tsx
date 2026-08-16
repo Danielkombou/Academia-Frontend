@@ -1,11 +1,9 @@
-import { jsPDF } from 'jspdf'
-
 interface StepDoneProps {
   step: number
   recipientCount: number
-  generatedPdfs: { name: string; pdf: jsPDF }[]
+  generatedPdfs: { name: string; blob: Blob }[]
   onDownloadZip: () => void
-  onDownloadSingle: (pdfObj: { name: string; pdf: jsPDF }) => void
+  onDownloadSingle: (pdf: { name: string; blob: Blob }) => void
   onReset: () => void
 }
 
