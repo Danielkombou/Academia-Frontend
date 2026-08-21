@@ -4,8 +4,11 @@ interface StepPreviewProps {
   step: number
   templatePreviewUrl: string
   templateDims: { width: number; height: number } | null
-  recipients: { name: string }[]
+  recipients: { name: string; [key: string]: string }[]
+  nameColumn: string
   textPositions: { name: { x: number; y: number; fontSize: number } }
+  nameFormatOpts: { fullNamesCount: number; abbreviationsCount: number }
+  nameColor: string
   isGenerating: boolean
   generationProgress: number
   onGenerate: () => void
@@ -16,7 +19,10 @@ export function StepPreview({
   templatePreviewUrl,
   templateDims,
   recipients,
+  nameColumn,
   textPositions,
+  nameFormatOpts,
+  nameColor,
   isGenerating,
   generationProgress,
   onGenerate,
@@ -27,9 +33,11 @@ export function StepPreview({
     ? templateDims.width / templateDims.height
     : 1.414
 
-  const previewName = recipients[0]
-    ? formatCertificateName(recipients[0].name || 'Daniel Kombou')
+  const rawSample = recipients[0]
+    ? (recipients[0][nameColumn] || recipients[0].name || 'Daniel Kombou')
     : 'Daniel Kombou'
+
+  const previewName = formatCertificateName(rawSample, nameFormatOpts)
   const previewFontSize = Math.max(16, textPositions.name.fontSize * 0.75)
 
   // jsPDF anchors text at its baseline; measure the font metrics so the preview
@@ -79,10 +87,11 @@ export function StepPreview({
               }}
             >
               <span 
-                className="font-serif font-bold text-[#1f2847] drop-shadow-sm inline-block px-2"
+                className="font-serif font-bold drop-shadow-sm inline-block px-2"
                 style={{
                   fontSize: `${previewFontSize}px`,
                   lineHeight: 1,
+                  color: nameColor,
                   transform: `translateY(${-baselineOffset}px)`,
                 }}
               >

@@ -37,6 +37,11 @@ export default function App() {
   const [textPositions, setTextPositions] = useState({
     name: { x: 50, y: 53, fontSize: 36 },
   })
+  const [nameFormatOpts, setNameFormatOpts] = useState({
+    fullNamesCount: 2,
+    abbreviationsCount: 999,
+  })
+  const [nameColor, setNameColor] = useState<string>('#1f2847')
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationProgress, setGenerationProgress] = useState(0)
   const [generatedPdfs, setGeneratedPdfs] = useState<{ name: string; blob: Blob }[]>([])
@@ -152,8 +157,8 @@ export default function App() {
     try {
       for (let i = 0; i < recipients.length; i++) {
         const recipient = recipients[i]
-        const rawName = recipient.name || 'Recipient'
-        const nameVal = formatCertificateName(rawName)
+        const rawName = recipient[nameColumn] || recipient.name || 'Recipient'
+        const nameVal = formatCertificateName(rawName, nameFormatOpts)
 
         const doc = new jsPDF({
           orientation,
@@ -173,7 +178,7 @@ export default function App() {
           doc.rect(10, 10, pageWidth - 20, pageHeight - 20)
         }
 
-        doc.setTextColor(31, 40, 71)
+        doc.setTextColor(nameColor)
         doc.setFont('times', 'bold')
         doc.setFontSize(textPositions.name.fontSize)
         const nameX = (textPositions.name.x / 100) * pageWidth
@@ -293,6 +298,10 @@ export default function App() {
           setNameColumn={setNameColumn}
           textPositions={textPositions}
           setTextPositions={setTextPositions}
+          nameFormatOpts={nameFormatOpts}
+          setNameFormatOpts={setNameFormatOpts}
+          nameColor={nameColor}
+          setNameColor={setNameColor}
           onNext={() => setStep(4)}
           onEdit={() => setStep(3)}
         />
@@ -302,7 +311,10 @@ export default function App() {
           templatePreviewUrl={templatePreviewUrl}
           templateDims={templateDims}
           recipients={recipients}
+          nameColumn={nameColumn}
           textPositions={textPositions}
+          nameFormatOpts={nameFormatOpts}
+          nameColor={nameColor}
           isGenerating={isGenerating}
           generationProgress={generationProgress}
           onGenerate={generateCertificatesPDFs}
