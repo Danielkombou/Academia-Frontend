@@ -7,7 +7,10 @@ export const formatCertificateName = (raw: string, options: NameFormatOptions = 
   const parts = raw.trim().split(/\s+/).filter(Boolean)
   if (parts.length === 0) return raw
 
-  const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
+  const titleCase = (s: string) => 
+    s.split('-')
+     .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+     .join('-')
   const fullCount = Math.min(options.fullNamesCount, parts.length)
   const full = parts.slice(0, fullCount).map(titleCase)
   
