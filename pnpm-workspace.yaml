@@ -1,3 +1,5 @@
 allowBuilds:
+  canvas: true
+  core-js: true
   sharp: false
   unrs-resolver: false

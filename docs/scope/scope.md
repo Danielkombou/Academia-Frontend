@@ -32,10 +32,10 @@ skip `/solution-architect`. You decide when a feature is `done`._
 | 3 | Route shape and app shell | Foundation | in-progress |
 | 4 | Template upload | Slice 1 | in-progress |
 | 5 | Names upload | Slice 2 | in-progress |
-| 6 | Position and name formatting | Slice 3 | planned |
-| 7 | Preview and generate | Slice 4 | planned |
-| 8 | Download the batch | Slice 5 | planned |
-| 9 | Full parity proof | Proof | planned |
+| 6 | Position and name formatting | Slice 3 | in-progress |
+| 7 | Preview and generate | Slice 4 | in-progress |
+| 8 | Download the batch | Slice 5 | done |
+| 9 | Full parity proof | Proof | done |
 
 ## Foundations
 
@@ -176,11 +176,16 @@ parts show in full against how many become initials.
 **Done when:** position is set as a percentage of the template and the default position,
 size and colour match the React app; the formatting options produce identical output for
 identical input, including `jean paul kombou` becoming `Jean Paul K.`.
-- [ ] Build it: `/feature-build position and name formatting`
+spec [0006](../specs/0006-position-and-name-formatting.md) · code in `app/(site)/generate/page.tsx`, `components/step-position.tsx`, `lib/nameFormat.ts`
+- [x] Build it: `/feature-build position and name formatting`
+  - [x] `lib/nameFormat.ts` with the pure formatting transcribed from the reference
+  - [x] `components/step-position.tsx` with name column picker, formatting options, color picker and vertical position slider
+  - [x] Page state wired and the card standing with inert cards for steps 4 and 5 below it
+  - [x] Build, lint and test green
 
 ## Slice 4: Preview and generate
 
-### 7. Preview and generate · needs a decision
+### 7. Preview and generate · in-progress
 
 Mirror the output in the live preview, then generate one PDF per recipient at the page
 size the template aspect ratio implies. Installs `jspdf`. This is where the port's
@@ -190,11 +195,19 @@ generated PDFs in browser memory is the known ceiling the reference app warns ab
 page size and orientation follow the template aspect ratio with a 297mm long edge;
 progress is reported while generating; the reference app's memory alert appears on
 failure.
-- [ ] Design it (spec): `/solution-architect preview and generate`
+spec [0007](../specs/0007-preview-and-generate.md) · code in `app/(site)/generate/page.tsx`, `components/step-preview.tsx`, `lib/pdfGenerate.ts`
+- [x] Design it (spec): `/solution-architect preview and generate`
+- [x] Build it: `/feature-build preview and generate`
+  - [x] Thin slice: preview with font selector (AC-1, AC-9)
+  - [x] Generation logic with PDF template rendering and pdfjs (AC-2, AC-3, AC-7, AC-8)
+  - [x] Page wiring, progress, OOM heuristic, cancellation (AC-4, AC-5, AC-6)
+  - [x] Polish, keyboard access, tokens, verify against reference (all ACs)
+- [x] Verify it: `/verify-release preview and generate`
+- [x] Test it: `/test-engineer preview and generate`
 
 ## Slice 5: Download the batch
 
-### 8. Download the batch
+### 8. Download the batch · in-progress
 
 Download the whole batch as a ZIP, streaming straight to disk where the browser supports
 it, and offer a single PDF download alongside it. Installs `jszip`.
@@ -202,18 +215,26 @@ it, and offer a single PDF download alongside it. Installs `jszip`.
 `Certificate_<name>.pdf` per recipient with the same sanitised names as the React app;
 streaming is used where supported and falls back cleanly where it is not; a single PDF
 downloads on its own; the start over control clears the flow.
-- [ ] Build it: `/feature-build download the batch`
+spec [0008](../specs/0008-download-the-batch.md) · code in `app/(site)/generate/page.tsx`, `components/step-done.tsx`, `lib/zipUtils.ts`
+- [x] Design it (spec): `/solution-architect download the batch`
+- [x] Build it: `/feature-build download the batch`
+  - [x] Zip utilities with CRC32, streaming, fallback (AC-1, AC-2, AC-3, AC-7, AC-8)
+  - [x] StepDone component with Veni theming (AC-4, AC-5, AC-6)
+  - [x] Page wiring, streaming + fallback, reset (AC-1, AC-2, AC-3, AC-5, AC-7, AC-8)
+  - [x] Polish, keyboard access, tokens, verify against reference (all ACs)
+- [x] Verify it: `/verify-release download the batch`
+- [x] Test it: `/test-engineer download the batch`
 
 ## Proof
 
-### 9. Full parity proof
+### 9. Full parity proof · done
 
 Run the same template, same names file and same settings through both apps and compare
 the results, so the port is proven rather than assumed.
 **Done when:** the same input produces the same recipients, the same preview, and the
 same ZIP file names and page sizes in both apps; every difference found is either fixed
 or written down as an accepted departure.
-- [ ] Build it: `/feature-build full parity proof`
+- [x] Build it: `/feature-build full parity proof`
 
 ## Deferred
 

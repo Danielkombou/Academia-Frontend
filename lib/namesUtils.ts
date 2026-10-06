@@ -3,6 +3,11 @@ export interface Recipient {
   [key: string]: string;
 }
 
+export interface NameFormatOptions {
+  fullNamesCount: number;
+  abbreviationsCount: number;
+}
+
 /**
  * What a names file resolves to.
  *

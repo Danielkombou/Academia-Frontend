@@ -224,7 +224,7 @@ describe("step 1 progress and collapse (AC-6, AC-14, AC-15)", () => {
     expect(input()).toBeEnabled();
   });
 
-  it("collapses to a summary and names the three steps that are not built yet", async () => {
+  it("collapses through steps 2 and 3, then shows the real Step 4 (Preview)", async () => {
     getImageTemplate.mockResolvedValue(template(2970, 2100));
     render(<GeneratePage />);
 
@@ -238,8 +238,7 @@ describe("step 1 progress and collapse (AC-6, AC-14, AC-15)", () => {
     expect(screen.getAllByText("cert.png")).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Change" })).toBeInTheDocument();
 
-    // Step 2 is feature 5 and is now a real card, so it needs continuing past
-    // before the inert cards for 3 to 5 appear below it.
+    // Step 2 is feature 5 and is now a real card
     expect(
       screen.getByRole("heading", { name: "Upload Names File (CSV / TXT)" }),
     ).toBeInTheDocument();
@@ -247,19 +246,24 @@ describe("step 1 progress and collapse (AC-6, AC-14, AC-15)", () => {
       screen.getByRole("button", { name: /continue to step 3/i }),
     );
 
-    for (const [number, name, feature] of [
-      ["3", "Position and name formatting", "6"],
-      ["4", "Preview and generate", "7"],
-      ["5", "Download the batch", "8"],
-    ]) {
-      expect(screen.getByRole("heading", { name })).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          `This step arrives in feature ${feature} of this build.`,
-        ),
-      ).toBeInTheDocument();
-      expect(screen.getByText(`Step ${number}`)).toBeInTheDocument();
-    }
+    // Step 3 is feature 6 and is now a real card (StepPosition)
+    expect(
+      screen.getByRole("heading", { name: "Map Name Column, Format & Style" }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: /continue to preview/i }),
+    );
+
+    // Step 4 is now a real component (StepPreview), not an inert card
+    expect(
+      screen.getByRole("heading", { name: "Certificate Preview & Generation" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /generate all 3 certificates/i })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup")).toBeInTheDocument();
+
+    // Step 5 is still inert (feature 8 not built yet) and only appears after step 4 completes
+    // (when step > 4). It's not visible at step 4.
+    expect(screen.queryByRole("heading", { name: "Download the batch" })).not.toBeInTheDocument();
 
     // Step 1 is the first collapsed card, so the first Change reopens it without
     // losing the template.

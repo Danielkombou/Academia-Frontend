@@ -2,7 +2,10 @@
 
 import { useCallback, useRef, useState } from "react";
 
+import { StepDone } from "@/components/step-done";
 import { StepNames } from "@/components/step-names";
+import { StepPosition } from "@/components/step-position";
+import { StepPreview } from "@/components/step-preview";
 import { StepTemplate } from "@/components/step-template";
 import {
   DEFAULT_COLUMNS,
@@ -14,6 +17,20 @@ import {
   type Recipient,
 } from "@/lib/namesUtils";
 import {
+  downloadSinglePDF,
+  downloadZipFallback,
+  streamZipToDisk,
+  supportsStreamingZip,
+} from "@/lib/zipUtils";
+import {
+  estimateGenerationMemory,
+  generateAllPdfs,
+  MEMORY_ALERT_MESSAGE,
+  OOM_WARNING_THRESHOLD,
+  type GenerateParams,
+  type GeneratedPdf,
+} from "@/lib/pdfGenerate";
+import {
   getImageTemplate,
   isPdfFile,
   type TemplateImage,
@@ -22,18 +39,18 @@ import {
 const LOAD_FAILED_MESSAGE =
   "Sorry, this template could not be loaded. Please try a different file.";
 
-// Step N is scope feature N+3 in docs/scope/scope.md. The names are the scope's
-// own, not invented here, and the cards are deliberately inert: those features
-// have not been built yet and this slice must not pretend otherwise.
-const UPCOMING_STEPS = [
-  { step: 3, name: "Position and name formatting", feature: 6 },
-  { step: 4, name: "Preview and generate", feature: 7 },
-  { step: 5, name: "Download the batch", feature: 8 },
-];
-
 interface TemplateSize {
   width: number;
   height: number;
+}
+
+interface TextPositions {
+  name: { x: number; y: number; fontSize: number };
+}
+
+interface NameFormatOptions {
+  fullNamesCount: number;
+  abbreviationsCount: number;
 }
 
 export default function GeneratePage() {
@@ -45,16 +62,27 @@ export default function GeneratePage() {
 
   const [spreadsheetFile, setSpreadsheetFile] = useState<File | null>(null);
   const [recipients, setRecipients] = useState<Recipient[]>(DEMO_RECIPIENTS);
-  // The parsed columns and the chosen name column. The reference holds both next
-  // to the recipients, and step 3's name column picker reads them, but that step
-  // is feature 6 and has not been built, so nothing here reads them yet. The
-  // values are still set from every parse so the parse result is not lost when
-  // the file is dropped, which is the only chance to read it.
-  /* biome-ignore lint/correctness/noUnusedVariables: read by step 3, feature 6 */
   const [columns, setColumns] = useState<string[]>(DEFAULT_COLUMNS);
-  /* biome-ignore lint/correctness/noUnusedVariables: read by step 3, feature 6 */
   const [nameColumn, setNameColumn] = useState(DEFAULT_NAME_COLUMN);
   const [isNamesBusy, setIsNamesBusy] = useState(false);
+
+  const [textPositions, setTextPositions] = useState<TextPositions>({
+    name: { x: 50, y: 53, fontSize: 36 },
+  });
+  const [nameFormatOpts, setNameFormatOpts] = useState<NameFormatOptions>({
+    fullNamesCount: 2,
+    abbreviationsCount: 999,
+  });
+  const [nameColor, setNameColor] = useState("#1f2847");
+  const [fontFamily, setFontFamily] = useState<
+    "times" | "helvetica" | "courier"
+  >("times");
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generatedPdfs, setGeneratedPdfs] = useState<GeneratedPdf[]>([]);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Bumped as the first action of every pick. Only the current token may write
   // state, clear the busy flag or alert, so a slow superseded read lands on
@@ -124,6 +152,123 @@ export default function GeneratePage() {
     }
   }, []);
 
+  const handleGenerate = useCallback(async () => {
+    if (recipients.length === 0) return;
+
+    const estimatedBytes = estimateGenerationMemory(
+      templateDataUrl,
+      recipients.length,
+    );
+    if (estimatedBytes > OOM_WARNING_THRESHOLD) {
+      const confirmGenerate = window.confirm(
+        "Large batch may exceed browser memory. Continue anyway?",
+      );
+      if (!confirmGenerate) return;
+    }
+
+    abortControllerRef.current = new AbortController();
+    setIsGenerating(true);
+    setGenerationProgress(0);
+    const pdfs: GeneratedPdf[] = [];
+
+    try {
+      const params: GenerateParams = {
+        recipients,
+        nameColumn,
+        nameFormatOpts,
+        templateDataUrl,
+        templateFormat: "JPEG",
+        templateDims,
+        textPositions,
+        nameColor,
+        fontFamily,
+        signal: abortControllerRef.current.signal,
+      };
+
+      for await (const result of generateAllPdfs(params)) {
+        setGenerationProgress(result.progress);
+        pdfs.push(...result.pdfs);
+      }
+
+      if (!abortControllerRef.current?.signal.aborted) {
+        setGeneratedPdfs(pdfs);
+        setStep(5);
+      }
+    } catch {
+      if (!abortControllerRef.current?.signal.aborted) {
+        alert(MEMORY_ALERT_MESSAGE);
+      }
+    } finally {
+      setIsGenerating(false);
+      setGenerationProgress(0);
+      abortControllerRef.current = null;
+    }
+  }, [
+    recipients,
+    nameColumn,
+    nameFormatOpts,
+    templateDataUrl,
+    templateDims,
+    textPositions,
+    nameColor,
+    fontFamily,
+  ]);
+
+  const handleCancel = useCallback(() => {
+    abortControllerRef.current?.abort();
+    setIsGenerating(false);
+    setGenerationProgress(0);
+    abortControllerRef.current = null;
+  }, []);
+
+  const handleDownloadZip = useCallback(async () => {
+    if (generatedPdfs.length === 0) return;
+    setIsDownloading(true);
+    try {
+      if (supportsStreamingZip()) {
+        await streamZipToDisk(generatedPdfs, "Certificates_Batch.zip");
+      } else {
+        await downloadZipFallback(generatedPdfs, "Certificates_Batch.zip");
+      }
+    } catch {
+      // Streaming failed, try fallback
+      try {
+        await downloadZipFallback(generatedPdfs, "Certificates_Batch.zip");
+      } catch {
+        alert("Failed to download ZIP. Please try again.");
+      }
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [generatedPdfs]);
+
+  const handleDownloadSingle = useCallback(async () => {
+    if (generatedPdfs.length === 0) return;
+    setIsDownloading(true);
+    try {
+      await downloadSinglePDF(generatedPdfs[0]);
+    } catch {
+      alert("Failed to download PDF. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [generatedPdfs]);
+
+  const handleReset = useCallback(() => {
+    setStep(1);
+    setTemplateFile(null);
+    setTemplateDataUrl("");
+    setTemplateDims(null);
+    setSpreadsheetFile(null);
+    setIsGenerating(false);
+    setGeneratedPdfs([]);
+    setIsDownloading(false);
+    // Keep demo recipients (DEMO_RECIPIENTS is the initial state)
+    setRecipients(DEMO_RECIPIENTS);
+    setColumns(DEFAULT_COLUMNS);
+    setNameColumn(DEFAULT_NAME_COLUMN);
+  }, []);
+
   return (
     <section
       id="generator-flow"
@@ -154,25 +299,47 @@ export default function GeneratePage() {
         onEdit={() => setStep(2)}
       />
 
-      {step > 2 &&
-        UPCOMING_STEPS.map(({ step: stepNumber, name, feature }) => (
-          <div
-            key={stepNumber}
-            className="rounded-lg border border-border bg-muted p-6 lg:p-8"
-          >
-            <div className="mb-2 flex items-center gap-4">
-              <span className="rounded-md border border-border bg-background px-3 py-1 font-mono text-sm font-bold text-muted-foreground">
-                Step {stepNumber}
-              </span>
-              <h2 className="font-heading text-xl font-semibold text-muted-foreground">
-                {name}
-              </h2>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              This step arrives in feature {feature} of this build.
-            </p>
-          </div>
-        ))}
+      <StepPosition
+        step={step}
+        columns={columns}
+        nameColumn={nameColumn}
+        setNameColumn={setNameColumn}
+        textPositions={textPositions}
+        setTextPositions={setTextPositions}
+        nameFormatOpts={nameFormatOpts}
+        setNameFormatOpts={setNameFormatOpts}
+        nameColor={nameColor}
+        setNameColor={setNameColor}
+        onNext={() => setStep(Math.max(4, step))}
+        onEdit={() => setStep(3)}
+      />
+
+      <StepPreview
+        step={step}
+        templateDataUrl={templateDataUrl}
+        templateDims={templateDims}
+        recipients={recipients}
+        nameColumn={nameColumn}
+        textPositions={textPositions}
+        nameFormatOpts={nameFormatOpts}
+        nameColor={nameColor}
+        fontFamily={fontFamily}
+        setFontFamily={setFontFamily}
+        isGenerating={isGenerating}
+        generationProgress={generationProgress}
+        onGenerate={handleGenerate}
+        onCancel={handleCancel}
+      />
+
+      <StepDone
+        step={step}
+        recipientCount={recipients.length}
+        generatedPdfs={generatedPdfs}
+        onDownloadZip={handleDownloadZip}
+        onDownloadSingle={handleDownloadSingle}
+        onReset={handleReset}
+        isDownloading={isDownloading}
+      />
     </section>
   );
 }
