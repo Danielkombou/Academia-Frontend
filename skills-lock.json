@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "react-pdf-kit-nextjs-app-router": {
+      "source": "react-pdf-kit/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-pdf-kit-nextjs-app-router/SKILL.md",
+      "computedHash": "eaeb9410cde30796777900ce96ea467d29dd3b7a2878c76ae273fe4498cd12b3"
+    },
+    "react-pdf-kit-worker-config": {
+      "source": "react-pdf-kit/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-pdf-kit-worker-config/SKILL.md",
+      "computedHash": "d47a48fefbe5302302babfebf6f7c4d0176459eae7652aa763c3d9dccb5bf5d1"
+    },
+    "vitest": {
+      "source": "paulrberg/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/vitest/SKILL.md",
+      "computedHash": "1503bf5d4362ad7a23c6b85d92486558605eca2deefcd523b0fec4c28d5709d6"
+    }
+  }
+}
