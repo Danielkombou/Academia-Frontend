@@ -27,9 +27,6 @@ export function ThemeToggle() {
     setMounted(true);
   }, []);
 
-  const Icon =
-    theme === "system" ? Monitor : resolvedTheme === "dark" ? Moon : Sun;
-
   // The saved choice is only readable in the browser, so the server and the
   // first client render cannot know it. This reserves the trigger's exact box
   // until the provider has mounted, which keeps the header from shifting and
@@ -37,10 +34,13 @@ export function ThemeToggle() {
   if (!mounted) {
     return (
       <Button variant="ghost" size="icon" aria-hidden="true" tabIndex={-1}>
-        <Icon className="invisible" aria-hidden="true" />
+        <Sun className="invisible" aria-hidden="true" />
       </Button>
     );
   }
+
+  const Icon =
+    theme === "system" ? Monitor : resolvedTheme === "dark" ? Moon : Sun;
 
   return (
     <DropdownMenu>

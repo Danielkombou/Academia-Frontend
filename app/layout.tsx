@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { JetBrains_Mono, Nunito, Outfit } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import { cn } from "@/lib/utils";
 
 const outfit = Outfit({
@@ -58,15 +58,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           "selection:bg-primary selection:text-primary-foreground",
         )}
       >
-        <NextThemesProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          storageKey="veni-theme"
-        >
-          {children}
-        </NextThemesProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
