@@ -27,6 +27,7 @@
     "cn": "^0.4.0",
     "date-fns": "^4.4.0",
     "embla-carousel-react": "^8.6.0",
+    "inngest": "^4.21.1",
     "input-otp": "^1.5.0",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.2",
