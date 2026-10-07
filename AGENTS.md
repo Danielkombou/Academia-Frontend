@@ -218,6 +218,10 @@ when porting, they are the places Next.js behaves differently from Vite:
     pnpm format    # biome format --write
     pnpm test      # vitest run
 
+## Git
+
+integration: on
+
 ## Stack
 
 Next.js 16 (App Router), React 19, TypeScript strict, Tailwind CSS 4, Biome, pnpm,
