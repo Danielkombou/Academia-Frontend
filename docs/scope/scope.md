@@ -134,11 +134,20 @@ Set up Inngest for async work: stale account cleanup, verification reminders, bu
    - [ ] Integration test: all functions register, dev server works
 Spec 0012 · code in `lib/inngest/`, `app/api/inngest/`
 
-### 13. Arcjet security and rate limiting · planned · needs a decision
+### 13. Arcjet security and rate limiting · done
 
 Integrate Arcjet Shield for bot detection and attack protection globally, plus token-bucket rate limiting on certificate generation actions keyed by organization entitlement.
 **Done when:** Global shield active, bot detection blocks scrapers, generation rate limit respects plan entitlements, denied requests return clear error messages.
-- [ ] Design it (spec): `/solution-architect arcjet security and rate limiting`
+- [x] Design it (spec): `/solution-architect arcjet security and rate limiting`
+- [x] Build it: `/feature-build arcjet security and rate limiting`
+   - [x] Install Arcjet, create client config with Shield + bot detection
+   - [x] Certificate generation rate limiter with token bucket per plan
+   - [x] Arcjet middleware for global Shield
+   - [x] Protect certificate generation Server Action with rate limiter
+   - [x] Arcjet decision logging to AuditEvent
+   - [x] Arcjet dev mode for local testing
+   - [x] Integration test: Shield blocks bot, rate limiter enforces per-plan limits
+Spec 0013 · code in `lib/arcjet/`, `middleware.ts`, `lib/arcjet/cert-generation.ts`
 
 ### 14. Email delivery with Nodemailer · planned · needs a decision
 
