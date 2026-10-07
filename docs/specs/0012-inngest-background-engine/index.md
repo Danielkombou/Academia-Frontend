@@ -1,7 +1,7 @@
 # 0012. Inngest background engine
 
 **Date**: 2026-10-07
-**Status**: Proposed
+**Status**: In Progress
 
 ## Summary
 
@@ -141,3 +141,4 @@ Subscription: TRIALING → ACTIVE → PAST_DUE → (renewal) → ACTIVE
 - [ ] Design Fapshi webhook signature verification
 - [ ] Add Inngest dashboard monitoring alerts
 - [ ] Consider Neon Functions as alternative for some jobs (trigger on object upload)
+- [ ] Evaluate Neon Object Storage for certificate batch ZIP storage (S3-compatible, branches with DB, same credentials as Neon Postgres)

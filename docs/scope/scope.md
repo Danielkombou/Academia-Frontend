@@ -123,15 +123,15 @@ Spec 0011 · code in `lib/auth/`, `lib/auth-client.ts`, `app/api/auth/`, `lib/au
 Set up Inngest for async work: stale account cleanup, verification reminders, bulk certificate batch processing, payment webhook reconciliation, subscription renewal cron.
 **Done when:** Inngest dev server runs locally, HTTP endpoint exposed at `/api/inngest`, core functions registered (auth cleanup, cert batch, subscriptions), retries and backoff configured.
 - [x] Design it (spec): `/solution-architect inngest background engine`
-- [ ] Build it: `/feature-build inngest background engine`
-   - [ ] Install Inngest, add dev server to docker-compose, create /api/inngest endpoint
-   - [ ] Stale account cleanup function (daily cron, 14 days)
-   - [ ] Verification reminder functions (7d and 12d delays)
-   - [ ] Certificate batch processing function (chunked, progress, object storage)
-   - [ ] Payment webhook reconciliation (Fapshi signature, idempotent)
-   - [ ] Subscription renewal cron (daily, PAST_DUE processing)
-   - [ ] Retries, backoff, concurrency limits configured
-   - [ ] Integration test: all functions register, dev server works
+- [x] Build it: `/feature-build inngest background engine`
+   - [x] Install Inngest, add dev server to docker-compose, create /api/inngest endpoint
+   - [x] Stale account cleanup function (daily cron, 14 days)
+   - [x] Verification reminder functions (7d and 12d delays)
+   - [x] Certificate batch processing function (chunked, progress, object storage)
+   - [x] Payment webhook reconciliation (Fapshi signature, idempotent)
+   - [x] Subscription renewal cron (daily, PAST_DUE processing)
+   - [x] Retries, backoff, concurrency limits configured
+   - [x] Integration test: all functions register, dev server works
 Spec 0012 · code in `lib/inngest/`, `app/api/inngest/`
 
 ### 13. Arcjet security and rate limiting · planned · needs a decision
