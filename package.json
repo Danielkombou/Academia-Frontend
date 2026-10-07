@@ -9,7 +9,6 @@
     "lint": "biome check",
     "format": "biome format --write",
     "test": "vitest run",
-    "postinstall": "prisma skills sync || exit 0",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
@@ -17,6 +16,7 @@
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@arcjet/next": "^1.14.0",
     "@base-ui/react": "^1.8.0",
     "@better-auth/client": "0.0.2-alpha.3",
     "@prisma/client": "^6.19.3",
@@ -27,6 +27,7 @@
     "cn": "^0.4.0",
     "date-fns": "^4.4.0",
     "embla-carousel-react": "^8.6.0",
+    "inngest": "^4.21.1",
     "input-otp": "^1.5.0",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.2",
