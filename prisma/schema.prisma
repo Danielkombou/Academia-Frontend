@@ -1,0 +1,369 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  FREE_PILOT
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum Provider {
+  FAPSHI
+  MANUAL
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentPurpose {
+  SUBSCRIPTION
+  RENEWAL
+  ONE_TIME
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  EVENT_MANAGER
+  STAFF
+  SPEAKER
+  VOLUNTEER
+}
+
+enum BatchStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum CertificateStatus {
+  PENDING
+  GENERATED
+  FAILED
+}
+
+enum OrgSize {
+  SIZE_1_10
+  SIZE_11_50
+  SIZE_51_200
+  SIZE_200_PLUS
+}
+
+model User {
+  id                  String    @id @default(uuid())
+  email               String    @unique
+  emailVerified       Boolean   @default(false)
+  name                String?
+  image               String?
+  role                String?   // global roles: user, admin (platform)
+  banned              Boolean   @default(false)
+  banReason           String?
+  banExpires          DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Better Auth specific
+  passwordHash        String?
+  phone               String?
+  source              String?
+  onboardingStep      Int       @default(0)
+  onboardingCompleted Boolean   @default(false)
+  onboardingData      Json?
+
+  // Relations
+  accounts            Account[]
+  sessions            Session[]
+  memberships         Member[]
+  createdBatches      CertificateBatch[] @relation("BatchCreator")
+  createdTemplates    CertificateTemplate[] @relation("TemplateCreator")
+  ownedOrganizations  Organization[] @relation("OrganizationOwner")
+  invitationsSent     Invitation[] @relation("InvitationSent")
+
+  @@index([email])
+  @@index([onboardingStep])
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  providerId        String
+  accountId         String
+  accessToken       String?
+  refreshToken      String?
+  idToken           String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope             String?
+  password          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Session {
+  id                   String   @id @default(uuid())
+  userId               String
+  expiresAt            DateTime
+  token                String   @unique
+  ipAddress            String?
+  userAgent            String?
+  activeOrganizationId String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([activeOrganizationId])
+}
+
+model Verification {
+  id        String   @id @default(uuid())
+  identifier String
+  value     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([identifier, value])
+  @@index([expiresAt])
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  logo      String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Veni specific
+  plan                  Plan      @default(FREE_PILOT)
+  subscriptionStatus    SubscriptionStatus @default(TRIALING)
+  subscriptionEndsAt    DateTime?
+  certificatesUsed      Int       @default(0)
+  website               String?
+  size                  OrgSize?
+
+  // Relations
+  members        Member[]
+  templates      CertificateTemplate[]
+  batches        CertificateBatch[]
+  certificates   Certificate[]
+  subscriptions  Subscription[]
+  payments       Payment[]
+  auditEvents    AuditEvent[]
+  invitations    Invitation[]
+  roles          OrganizationRole[]
+  owner          User? @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  ownerId        String?
+
+  @@index([slug])
+  @@index([plan])
+  @@index([ownerId])
+}
+
+model Member {
+  id             String   @id @default(uuid())
+  organizationId String
+  userId         String
+  role           String   // comma-separated roles: "owner,admin"
+  createdAt      DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model Invitation {
+  id             String   @id @default(uuid())
+  organizationId String
+  email          String
+  role           String
+  status         String   @default("pending")
+  expiresAt      DateTime
+  inviterId      String
+  createdAt      DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviter        User       @relation("InvitationSent", fields: [inviterId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([email])
+  @@index([status])
+}
+
+model OrganizationRole {
+  id             String   @id @default(uuid())
+  organizationId String
+  role           String
+  permission     Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, role])
+  @@index([organizationId])
+}
+
+model Subscription {
+  id                       String   @id @default(uuid())
+  organizationId           String   @unique
+  plan                     Plan
+  status                   SubscriptionStatus @default(TRIALING)
+  provider                 Provider @default(FAPSHI)
+  providerSubscriptionId   String?
+  currentPeriodStart       DateTime
+  currentPeriodEnd         DateTime
+  canceledAt               DateTime?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  organization             Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payments                 Payment[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model Payment {
+  id                    String      @id @default(uuid())
+  organizationId        String
+  subscriptionId        String?
+  provider              Provider    @default(FAPSHI)
+  providerPaymentId     String      @unique
+  amount                Int
+  currency              String      @default("XAF")
+  status                PaymentStatus @default(PENDING)
+  purpose               PaymentPurpose
+  metadata              Json?
+  createdAt             DateTime    @default(now())
+  confirmedAt           DateTime?
+
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  subscription          Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([subscriptionId])
+  @@index([providerPaymentId])
+  @@index([status])
+}
+
+model CertificateTemplate {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  fileName       String
+  mimeType       String
+  width          Int
+  height         Int
+  aspectRatio    Float
+  storageKey     String
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy      User       @relation("TemplateCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  batches        CertificateBatch[]
+
+  @@index([organizationId])
+  @@index([createdById])
+}
+
+model CertificateBatch {
+  id              String        @id @default(uuid())
+  organizationId  String
+  templateId      String
+  nameColumn      String
+  fullNameParts   Int
+  fontSize        Int
+  fontColor       String
+  positionY       Float
+  status          BatchStatus   @default(PENDING)
+  totalRecipients Int
+  completedCount  Int           @default(0)
+  zipStorageKey   String?
+  errorMessage    String?
+  createdById     String
+  createdAt       DateTime      @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template        CertificateTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  createdBy       User          @relation("BatchCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  certificates    Certificate[]
+
+  @@index([organizationId])
+  @@index([templateId])
+  @@index([createdById])
+  @@index([status])
+}
+
+model Certificate {
+  id                String            @id @default(uuid())
+  batchId           String
+  organizationId    String
+  recipientName     String
+  recipientNameRaw  String
+  pdfStorageKey     String
+  status            CertificateStatus @default(PENDING)
+  createdAt         DateTime          @default(now())
+
+  batch             CertificateBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  organization      Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([organizationId])
+  @@index([recipientName])
+}
+
+model AuditEvent {
+  id             String         @id @default(uuid())
+  organizationId String?
+  userId         String?
+  action         String
+  targetType     String
+  targetId       String
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+
+  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([action])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}

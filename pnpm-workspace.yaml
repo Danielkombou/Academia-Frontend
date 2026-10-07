@@ -1,5 +1,10 @@
 allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
   canvas: true
   core-js: true
+  esbuild: true
+  prisma: true
   sharp: false
   unrs-resolver: false
+  workerd: true

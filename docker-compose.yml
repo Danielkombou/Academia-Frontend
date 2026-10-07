@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: veni-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: veni_dev
+      POSTGRES_PASSWORD: veni_password
+      POSTGRES_DB: veni_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U veni_dev -d veni_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: veni-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  inngest:
+    image: inngest/inngest:latest
+    container_name: veni-inngest
+    restart: unless-stopped
+    ports:
+      - "8288:8288"
+    environment:
+      - INNGEST_DEV=1
+    command: "inngest-cli dev -u http://host.docker.internal:3000/api/inngest"
+
+volumes:
+  postgres_data:
+    driver: local
